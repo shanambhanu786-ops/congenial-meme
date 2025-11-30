@@ -1,0 +1,24 @@
+multi-agent-aiops-ott-security/
+│
+├── README.md
+├── LICENSE
+├── .gitignore
+│
+├── src/
+│   ├── nlp_log_analyzer.py
+│   ├── behavior_agent.py
+│   ├── decision_agent.py
+│   ├── automation_agent.py
+│   ├── dashboard_agent.py
+│   ├── run_pipeline.py
+│
+├── data/
+│   ├── sample_logs.txt
+│
+├── docs/
+│   ├── architecture_diagram.png (placeholder note)
+│   ├── workflow_summary.md
+│
+└── config/
+    ├── agents_config.yaml
+    ├── credentials.env
