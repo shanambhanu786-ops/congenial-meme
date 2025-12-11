@@ -1,0 +1,3 @@
+Prompt Engineering transforms a normal AI model into an intelligent anomaly-detection system by structuring the model’s reasoning, guiding its attention to patterns, and enforcing analytical steps.
+
+Traditional anomaly detection relies on statistical thresholds, ML models, or rule-based systems. LLMs bring an additional layer of contextual reasoning, pattern correlation, and semantic understanding — but only when guided with a well-designed prompt.
