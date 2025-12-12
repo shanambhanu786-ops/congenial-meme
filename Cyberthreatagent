@@ -1,0 +1,148 @@
+#!/usr/bin/env python3
+"""
+cyberthreat_export.py
+
+Usage:
+  - Generate a sample JSON:
+      python cyberthreat_export.py --sample --output sample-cyberthreats.json
+
+  - Convert CSV -> JSON and validate (CSV must have header):
+      python cyberthreat_export.py --csv threats.csv --output threats.json
+
+CSV expected columns (example):
+id,title,type,severity,description,indicators,observed_at,source,confidence
+
+- indicators column may be a semicolon-separated list of IoCs.
+"""
+import argparse
+import csv
+import json
+from dataclasses import dataclass, asdict, field
+from datetime import datetime
+from typing import List, Any
+
+SCHEMA_PATH = "cyberthreat_schema.json"
+
+
+@dataclass
+class CyberThreat:
+    id: str
+    title: str
+    type: str  # e.g., malware, phishing, vulnerability, actor
+    severity: str  # low, medium, high, critical
+    description: str
+    indicators: List[str] = field(default_factory=list)
+    observed_at: str = ""  # ISO 8601 timestamp
+    source: str = ""
+    confidence: int = 50  # 0-100
+
+    def to_dict(self) -> dict:
+        return asdict(self)
+
+
+def read_csv_to_threats(path: str) -> List[CyberThreat]:
+    threats = []
+    with open(path, newline="", encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            indicators_raw = row.get("indicators", "")
+            indicators = [i.strip() for i in indicators_raw.split(";") if i.strip()] if indicators_raw else []
+            observed = row.get("observed_at") or datetime.utcnow().isoformat() + "Z"
+            t = CyberThreat(
+                id=row.get("id", "").strip() or f"threat-{len(threats)+1}",
+                title=row.get("title", "").strip() or "untitled",
+                type=row.get("type", "unknown").strip(),
+                severity=row.get("severity", "medium").strip(),
+                description=row.get("description", "").strip(),
+                indicators=indicators,
+                observed_at=observed,
+                source=row.get("source", "").strip(),
+                confidence=int(row.get("confidence", 50) or 50),
+            )
+            threats.append(t)
+    return threats
+
+
+def generate_sample_threats() -> List[CyberThreat]:
+    return [
+        CyberThreat(
+            id="T-2025-0001",
+            title="Credential harvesting phishing campaign",
+            type="phishing",
+            severity="high",
+            description="Phishing emails using fake login pages to harvest credentials.",
+            indicators=["http://malicious.example/login", "phish_sender@example.com"],
+            observed_at="2025-12-01T10:15:00Z",
+            source="user-reports",
+            confidence=80,
+        ),
+        CyberThreat(
+            id="T-2025-0002",
+            title="Ransomware family X activity",
+            type="malware",
+            severity="critical",
+            description="Ransomware observed encrypting Windows hosts via network share propagation.",
+            indicators=["10.11.12.13", "abcd1234deadbeef.exe", "malicious-hash-0123456789abcdef"],
+            observed_at="2025-12-05T02:30:00Z",
+            source="honeyfarm",
+            confidence=90,
+        ),
+    ]
+
+
+def validate_against_schema(threats: List[dict], schema_path: str = SCHEMA_PATH) -> List[str]:
+    try:
+        import jsonschema
+    except ImportError:
+        return ["jsonschema package not installed. Install with: pip install jsonschema"]
+
+    with open(schema_path, "r", encoding="utf-8") as f:
+        schema = json.load(f)
+
+    errors = []
+    validator = jsonschema.Draft7Validator(schema)
+    for i, t in enumerate(threats):
+        for e in sorted(validator.iter_errors(t), key=lambda x: x.path):
+            path = ".".join(map(str, e.path)) if e.path else "(root)"
+            errors.append(f"Record {i} ({t.get('id','?')}): {path}: {e.message}")
+    return errors
+
+
+def write_json(threats: List[CyberThreat], outpath: str):
+    arr = [t.to_dict() for t in threats]
+    with open(outpath, "w", encoding="utf-8") as f:
+        json.dump(arr, f, indent=2)
+    print(f"Wrote {len(arr)} records to {outpath}")
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Export cyberthreat records to JSON")
+    parser.add_argument("--sample", action="store_true", help="Generate sample JSON")
+    parser.add_argument("--csv", type=str, help="Path to CSV file to convert")
+    parser.add_argument("--output", type=str, default="cyberthreats.json", help="Output JSON path")
+    parser.add_argument("--validate", action="store_true", help="Validate output against schema (requires jsonschema)")
+    args = parser.parse_args()
+
+    if args.sample:
+        threats = generate_sample_threats()
+    elif args.csv:
+        threats = read_csv_to_threats(args.csv)
+    else:
+        parser.print_help()
+        return
+
+    write_json(threats, args.output)
+
+    if args.validate:
+        arr = [t.to_dict() for t in threats]
+        errors = validate_against_schema(arr)
+        if errors:
+            print("Validation errors:")
+            for e in errors:
+                print(" -", e)
+        else:
+            print("Validation passed against schema.")
+
+
+if __name__ == "__main__":
+    main()
