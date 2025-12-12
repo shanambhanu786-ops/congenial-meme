@@ -1,0 +1,25 @@
+
+2 — Data model (core tables/collections)
+
+Simple relational/NoSQL hybrid:
+
+alerts (Elasticsearch / Postgres summary)
+
+id, event_time, source, rule_id, severity, score, summary, raw_event_ref, enriched_fields, status (new/triaged/closed)
+indicators
+id, type (ip/domain/hash), value, first_seen, last_seen, confidence, ttl, source
+
+incidents
+id, title, description, severity, score, created_at, updated_at, assigned_to, status, related_alert_ids
+
+
+assets
+
+asset_id, hostname, ip_addresses, owner, criticality, tags
+
+enrichment_cache
+
+key, data, t
+audit_log
+
+user, action, target_type, target_id, timestamp, metadata
