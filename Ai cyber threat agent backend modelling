@@ -1,0 +1,40 @@
+High-level architecture (components)
+
+1. Ingest Layer
+Input sources: sensor agents, syslog, Windows Event Forwarding, IDS/IPS alerts, EDR, netflow, honeypots, packet captures, threat intel feeds (STIX/TAXII), email gateways.
+Front-door: API gateway + message broker (Kafka / RabbitMQ).
+2. Normalization & Parsing
+Stream processors (Kafka Streams / Flink / Logstash) to parse logs into canonical event model (timestamp, src/dst, type, metadata).
+3. Enrichment
+Enrichment microservices: DNS/WHOIS, GeoIP, ASN, vulnerability lookup (CPE/CVEs), threat-intel lookup (indicators, TTPs).
+Cache layer (Redis) to avoid repeated lookups.
+4. Correlation & Detection
+Rule engine (Sigma-style rules, YARA, custom rules) + correlation engine that links events to existing indicators/incidents.
+ML/anomaly engine for statistical/behavioral detection (optional).
+5. Scoring & Prioritization
+Threat scoring service: combine rule matches, intel confidence, asset criticality, velocity, user risk to compute an incident score.
+6. Incident & Case Management
+Incident DB and workflow (create incident, assign analyst, timeline).
+7. Orchestration & Response (SOAR)
+
+Playbooks (isolate host, block IP, enrich further), connectors to firewall, EDR, ticketing.
+8. Storage
+
+Hot: Elasticsearch / OpenSearch for search & dashboards.
+
+Long-term: Object storage (S3/MinIO) for PCAPs, raw logs.
+
+Relational: PostgreSQL for metadata, incidents, users.
+9. APIs & UI
+REST/gRPC APIs for ingestion, querying, and orchestration.
+
+Analyst UI / dashboards (Kibana / Grafana / custom React UI).
+
+
+
+10. Observability & Security
+
+Metrics (Prometheus), tracing (Jaeger), logs.
+
+Strong auth (OIDC), RBAC, auditing, WAF, network segmentation.
+
